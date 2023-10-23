@@ -8,6 +8,9 @@ import { FieldValues, SubmitHandler, useForm } from "react-hook-form";
 import AuthSocialButton from "./AuthSocialButton";
 import { BsGithub, BsGoogle } from 'react-icons/bs';
 import axios from "axios";
+import { toast } from "react-hot-toast";
+import { signIn } from "next-auth/react";
+import { sign } from "crypto";
 
 type Variant = 'INICIO' | 'REGISTRO';
 
@@ -42,18 +45,42 @@ const AuthForm = () => {
         setCargando(true);
 
         if (variante === 'REGISTRO') {
-            axios.post('/api/register', data)
+            axios.post('/api/register', data).catch(() => toast.error('PONÉ BIEN TUS DATOS MALPARIDO'))
+                .finally(() => setCargando(false))
         }
 
         if (variante === 'INICIO') {
-            //axios login
+            signIn('credentials', {
+                ...data,
+                redirect: false
+            })
+                .then((callback) => {
+                    if (callback?.error) {
+                        toast.error('PONÉ BIEN TUS DATOS MALPARIDO')
+                    }
+
+                    if (callback?.ok && !callback?.error) {
+                        toast.success('Bn ahí manito')
+                    }
+                })
+                .finally(() => setCargando(false));
         }
     }
 
     const socialAction = (action: string) => {
         setCargando(true);
 
-        //nextauth social sign in
+        signIn(action, { redirect: false })
+            .then((callback) => {
+                if (callback?.error) {
+                    toast.error('PONÉ BIEN TUS DATOS MALPARIDO')
+                }
+
+                if (callback?.ok && !callback?.error) {
+                    toast.success('Bn ahí manito')
+                }
+            })
+            .finally(() => setCargando(false));
     }
 
     return (
