@@ -3,23 +3,33 @@
 
 import Button from "@/app/components/Button";
 import Input from "@/app/components/inputs/Input";
-import { useCallback, useState } from "react";
+import { use, useCallback, useEffect, useState } from "react";
 import { FieldValues, SubmitHandler, useForm } from "react-hook-form";
 import AuthSocialButton from "./AuthSocialButton";
 import { BsGithub, BsGoogle } from 'react-icons/bs';
 import axios from "axios";
 import { toast } from "react-hot-toast";
-import { signIn } from "next-auth/react";
-import { sign } from "crypto";
+import { signIn, useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 type Variant = 'INICIO' | 'REGISTRO';
 
 const AuthForm = () => {
 
+    const session = useSession();
+    const router = useRouter();
     const [variante, setVariante] = useState<Variant>('INICIO');
     const [cargando, setCargando] = useState(false);
 
+    useEffect(() => {
+        if (session?.status === 'authenticated'){
+            console.log('authenticated')
+            router.push('/users');
+        }
+    }, [session?.status, router]);
+
     const toggleVariant = useCallback(() => {
+
         if (variante === 'INICIO') {
             setVariante('REGISTRO')
         } else {
@@ -45,7 +55,9 @@ const AuthForm = () => {
         setCargando(true);
 
         if (variante === 'REGISTRO') {
-            axios.post('/api/register', data).catch(() => toast.error('PONÉ BIEN TUS DATOS MALPARIDO'))
+            axios.post('/api/register', data)
+            .then(() => signIn('credentials', data))
+                .catch(() => toast.error('PONÉ BIEN TUS DATOS MALPARIDO'))
                 .finally(() => setCargando(false))
         }
 
@@ -77,7 +89,8 @@ const AuthForm = () => {
                 }
 
                 if (callback?.ok && !callback?.error) {
-                    toast.success('Bn ahí manito')
+                    toast.success('Bn ahí manito');
+                    router.push('/users');
                 }
             })
             .finally(() => setCargando(false));
